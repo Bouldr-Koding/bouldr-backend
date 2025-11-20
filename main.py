@@ -1,5 +1,7 @@
 from fastapi import FastAPI
-app = FastAPI()
+from firebase_config import db
+
+app = FastAPI() # Create FastAPI instance
 
 
 @app.get("/")
