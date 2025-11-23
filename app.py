@@ -61,3 +61,7 @@ def user_reg_create_acc(user_id: str, user_details: UserDetails):
 # @app.get("/user/update/sends")
 # def get_items():
 #     return {"message": "Welcome to db/insert"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
