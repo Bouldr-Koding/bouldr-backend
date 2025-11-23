@@ -1,0 +1,13 @@
+
+# Create User
+
+# Retrieve User
+
+# Delete User
+
+# Assign user role
+1 = Climber
+2 = Setter
+3 = Admin (Promote climbers to setters, access to gym) 1 account 
+4 = us (full access)
+
