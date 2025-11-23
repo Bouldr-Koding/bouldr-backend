@@ -1,20 +1,22 @@
 from fastapi import FastAPI, HTTPException, Response
-
+from dotenv import load_dotenv
 from typing import Optional
 import os
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 from datetime import datetime
 from pydantic import BaseModel, Field
+import json
 
 app = FastAPI() # Create FastAPI instance
 # ---------------------------
 # FIREBASE INITIALIZATION
 # ---------------------------
+load_dotenv()
+FIRESTORE_CRED = json.loads(os.environ['FIREBASE'])
 
-cred_path = "serviceAccountKey.json"
 if not firebase_admin._apps:
-    cred = credentials.Certificate(cred_path)
+    cred = credentials.Certificate(FIRESTORE_CRED)
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
@@ -61,3 +63,7 @@ def user_reg_create_acc(user_id: str, user_details: UserDetails):
 # @app.get("/user/update/sends")
 # def get_items():
 #     return {"message": "Welcome to db/insert"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
