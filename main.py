@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Response
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from typing import Optional
 import os
@@ -9,10 +10,22 @@ from pydantic import BaseModel, Field
 import json
 
 app = FastAPI() # Create FastAPI instance
+load_dotenv()
+
+# ---------------------------
+# CORS (for frontend-backend communication)
+# ---------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "https://bouldr-app.vercel.app"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # ---------------------------
 # FIREBASE INITIALIZATION
 # ---------------------------
-load_dotenv()
 FIRESTORE_CRED = json.loads(os.environ['FIREBASE'])
 
 if not firebase_admin._apps:
@@ -46,7 +59,7 @@ def read_root():
     return {"message": "Welcome to backend"}
 
 
-@app.post("/users/registration/create/{userId}")
+@app.post("/users/registration/create/{user_id}")
 def user_reg_create_acc(user_id: str, user_details: UserDetails):
     try:
         user_data = user_details.model_dump()
@@ -55,6 +68,13 @@ def user_reg_create_acc(user_id: str, user_details: UserDetails):
         return Response(status_code=200, content="Successfully registered user:{user_id}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/users/registration/exists/{user_id}")
+def user_exists(user_id: str):
+    doc = db.collection("users").document(user_id).get()
+    if not doc.exists:
+        raise HTTPException(status_code=404, detail="User not found")
+    return doc.to_dict()
 
 # @app.get("/database/insert")
 # def db_ins():
