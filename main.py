@@ -11,13 +11,13 @@ import json
 
 app = FastAPI() # Create FastAPI instance
 load_dotenv()
-
+NEXT_FRONTEND_URL = os.getenv("NEXT_FRONTEND_URL")
 # ---------------------------
 # CORS (for frontend-backend communication)
 # ---------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://bouldr-app.vercel.app"],
+    allow_origins=["http://localhost:3000", NEXT_FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
