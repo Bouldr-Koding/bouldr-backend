@@ -99,10 +99,10 @@ def user_reg_create_acc(user_id: str, user_details: UserDetails):
         user_data = user_details.model_dump()
         doc = db.collection("users").document(user_id)
         if doc.get().exists:
-            return Response(status_code=200, content="User with ID:{user_id} already exists!")  
+            return Response(status_code=200, content=f"User with ID:{user_id} already exists!", )  
         else:      
             doc.set(user_data)
-            return Response(status_code=200, content="Successfully registered user:{user_id}")
+            return Response(status_code=200, content=f"Successfully registered user:{user_id}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -123,10 +123,10 @@ def gym_reg_create(gym: Gym):
         gym_id = generate_gym_id(gym.slug, gym.location)
         doc = db.collection("gyms").document(gym_id)
         if doc.get().exists:
-            return Response(status_code=200, content="Gym with ID:{gym_id} already exists!")
+            return Response(status_code=200, content=f"Gym with ID:{gym_id} already exists!")
         gym_data = gym.model_dump()
         doc.set(gym_data)
-        return Response(status_code=200, content="Successfully registered gym:{gym_id}")
+        return Response(status_code=200, content=f"Successfully registered gym:{gym_id}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
