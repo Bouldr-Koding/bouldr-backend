@@ -5,6 +5,7 @@ from typing import Optional, List
 import os
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
+from google.cloud.firestore_v1 import Transaction
 from datetime import datetime
 from pydantic import BaseModel, Field
 import json
@@ -41,8 +42,8 @@ db = firestore.client()
 
 class UserStats(BaseModel):
     hardestGrade: str
-    totalPoints: int
-    totalSends: int
+    totalPoints: int = 0
+    totalSends: int = 0
 
 class UserDetails(BaseModel):
     createdAt: datetime = Field(..., description="Date time string")
@@ -67,6 +68,20 @@ class Gym(BaseModel):
     slug: str
     location: Location
     walls: List[Wall] = Field(default_factory=list)
+    routeCounter: int = 0
+    
+class Route(BaseModel):
+    wallId: int
+    setterId: str
+    attemptCount: int = 0
+    grade: str
+    createdAt: datetime = Field(..., description="Date time string")
+    styleTags: List[str]
+    rating: int = 0
+    sendCount: int = 0
+    isActive: bool = True
+    
+    
     
     
 # ---------------------------
@@ -99,7 +114,7 @@ def user_reg_create_acc(user_id: str, user_details: UserDetails):
         user_data = user_details.model_dump()
         doc = db.collection("users").document(user_id)
         if doc.get().exists:
-            return Response(status_code=200, content=f"User with ID:{user_id} already exists!", )  
+            return Response(status_code=404, content=f"User with ID:{user_id} already exists!", )  
         else:      
             doc.set(user_data)
             return Response(status_code=200, content=f"Successfully registered user:{user_id}")
@@ -123,23 +138,49 @@ def gym_reg_create(gym: Gym):
         gym_id = generate_gym_id(gym.slug, gym.location)
         doc = db.collection("gyms").document(gym_id)
         if doc.get().exists:
-            return Response(status_code=200, content=f"Gym with ID:{gym_id} already exists!")
+            return Response(status_code=404, content=f"Gym with ID:{gym_id} already exists!")
         gym_data = gym.model_dump()
         doc.set(gym_data)
         return Response(status_code=200, content=f"Successfully registered gym:{gym_id}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-# @app.get("gyms/registration/exists/{gym_id}")
-# def gym_exists(gym_id: str):
-#     try:
-#         doc = db.collection("gyms").document(gym_id).get()
-#         if not doc.exists:
-#             raise HTTPException(status_code=404, detail="Gym not found")
-#         return doc.to_dict()
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
+@app.get("/gyms/{gym_id}")
+def get_gym(gym_id: str):
+    gym_ref = db.collection("gyms").document(gym_id)
+    gym_snapshot = gym_ref.get()
 
+    if not gym_snapshot.exists:
+        raise HTTPException(status_code=404, detail="Gym not found")
+
+    gym_data = gym_snapshot.to_dict()
+    return Response(status_code=200, content={"gymId": gym_id, "data": gym_data})
+
+@app.post("/gyms/{gym_id}/routes/create")
+def create_route(gym_id: str, route: Route):
+    try:
+        gym_ref = db.collection("gyms").document(gym_id)
+        gym_snapshot = gym_ref.get()
+        
+        if not gym_snapshot.exists:
+            raise HTTPException(status_code=404, detail=f"Gym with ID {gym_id} does not exist!")
+        
+        current_counter = gym_snapshot.get("routeCounter")
+        if isinstance(current_counter, str):
+            current_counter = int(current_counter)
+        if current_counter is None:
+            current_counter = 0
+        
+        
+        current_counter += 1
+        gym_ref.update({"routeCounter": current_counter})
+        
+        route_data = route.model_dump()
+        route_ref = gym_ref.collection("routes").document(str(current_counter))
+        route_ref.set(route_data)
+        return Response(status_code=200, content=f"Successfully added route {current_counter}")
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    
 # @app.get("/database/insert")
 # def db_ins():
 #     return {"message": "Welcome to db/insert"}
@@ -150,4 +191,4 @@ def gym_reg_create(gym: Gym):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="localhost", port=8000, reload=True)
